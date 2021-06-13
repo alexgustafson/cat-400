@@ -54,10 +54,13 @@ template spawn*(name: ThreadName, code: untyped) =
       param = name,
       tp = proc(nm: ThreadName) {.thread.} =
         currentThreadName = nm
-        onThreadDestruction(proc() =
+        onThreadDestruction(proc() {.raises: []} =
           withLock threadsLock:
-            threadsPtr[][nm].channel.close()
-            threadsPtr[].del(nm)
+            try:
+              threadsPtr[][nm].channel.close()
+              threadsPtr[].del(nm)
+            except KeyError:
+              quit("Impossible key error somehow happened!")
         )
         code
     )
